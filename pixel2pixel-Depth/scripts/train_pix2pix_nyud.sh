@@ -1,0 +1,1 @@
+python train.py --dataroot ./datasets/nyud --name nyud_pix2pix --model test_nyud --which_model_netG unet_256 --which_direction BtoA --lambda_A 100 --dataset_mode nyud --no_lsgan --norm batch --loadSize 256 --pool_size 0

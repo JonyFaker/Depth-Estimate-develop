@@ -12,8 +12,8 @@ class NYUDDataset(BaseDataset):
 		self.opt = opt
 		self.root = opt.dataroot
 		self.dir_AB = os.path.join(opt.dataroot, opt.phase)
-		self.dir_nyud_img = os.path.join(dir_AB, 'img')
-		self.dir_nyud_dep = os.path.join(dir_AB, 'dep')
+		self.dir_nyud_img = os.path.join(self.dir_AB, 'img')
+		self.dir_nyud_dep = os.path.join(self.dir_AB, 'dep')
 		self.nyud_img = sorted(make_dataset(self.dir_nyud_img))
 		self.nyud_dep = sorted(make_dataset(self.dir_nyud_dep))
 		assert(opt.resize_or_crop == "resize_and_crop")
@@ -63,7 +63,7 @@ class NYUDDataset(BaseDataset):
         #     B = tmp.unsqueeze(0)
 
         return {'A': A, 'B': B,
-                'A_paths': AB_path, 'B_paths': AB_path}
+                'A_paths': A_path, 'B_paths': B_path}
 
     # return count of imgs under nyud/train/img (just for example)
     def __len__(self):
