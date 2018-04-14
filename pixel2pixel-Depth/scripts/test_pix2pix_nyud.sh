@@ -1,1 +1,1 @@
-python test.py --dataroot ./datasets/nyud --name facades_pix2pix --dataset_mode nyud --loadSize 256 --model test_nyud --which_model_netG resnet_9blocks --which_direction BtoA --dataset_mode nyud --norm batch
+python test.py --dataroot ./datasets/nyud --name facades_pix2pix --dataset_mode nyud --loadSize 256 --model test_nyud --which_model_netG unet_256 --which_direction AtoB --dataset_mode nyud --norm batch
