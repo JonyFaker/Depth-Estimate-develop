@@ -4,6 +4,7 @@ from torch.nn import init
 import functools
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
+import numpy as np
 
 ###################################
 def weights_init_normal(m):
@@ -117,6 +118,8 @@ class FCRN_Res50(torch.nn.Module):
 			nn.ReLu()
 		]
 
+		self.model = model
+
 
 	def forward(self, input):
 		if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
@@ -180,14 +183,98 @@ class ResidualBlock_Projection(torch.nn.Module):
 		out = self.block_A(input) + self.block_B(input)
 		return out
 
-def unpool_as_conv():
-	# conv A 3*3
 
-	# conv B 2*3
+def get_incoming_shape(incoming):
+	list shape = []
+	if isinstance(incoming, torch.cuda.FloatTensor) or isinstance(incoming, torch.FloatTensor):
+		shape = list(incoming.size())
+		return shape
+	else:
+        raise Exception("Invalid incoming tensor.")
 
-	# conv C 3*2
+def interleave(inputs, axis):
+	old_shape = get_incoming_shape(inputs[0])[1:]
+	new_shape = [-1] + old_shape
+	new_shape[axis] *= len(inputs)
+	# tensor to numpy
+	array1 = inputs.numpy()
+	inputs_stack = np.stack(inputs, axis+1)
+	inputs_stack.reshape(new_shape)
+	# numpy to tensor
+	torch_data = torch.from_numpy(inputs_stack)
+	return torch_data
+	
 
-	# conv D 2*2
+
+class unpool_as_conv(nn.Module):
+	def __init__(self, channels_in, channels_out, stride, ReLu, BN):
+		super(unpool_as_conv, self).__init__()
+		self.conv_A = self.get_conv_A(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
+		self.conv_B = self.get_conv_B(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
+		self.conv_C = self.get_conv_C(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
+		self.conv_D = self.get_conv_D(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
+		# hava some problem
+		if BN:
+			self.BN = 
+		seq = []
+		seq += [self.conv_A, self,conv_B, self.conv_C, self.conv_D]
+		if BN:
+			pass
+
+	def get_conv_A(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True):
+		# conv A 3*3
+		conv_A = []
+		conv_A += [  ## tf: self.conv( 3, 3, size[3], stride, stride, name = layerName, padding = 'SAME', relu = False)
+						nn.Conv2d(channels_in, channels_out, kernel_size=(3, 3), stride=stride, padding=(1, 1), bias=bias)
+				  ]
+		return nn.Sequential(*conv_A)
+
+	def get_conv_B(self, input, channels_in, channels_out, stride=(1,1), ReLu, bias=True):
+		# conv B 2*3
+		conv_B = []
+		conv_B += [
+					nn.functional.pad(input, [[0, 0], [0, 1], [1, 1], [0, 0]]),
+					nn.Conv2d(channels_in, channels_out, kernel_size=(2, 3), stride=stride, padding=0, bias=bias)
+					]
+		return nn.Sequential(*conv_B)
+
+	def get_conv_C(self, input, channels_in, channels_out, stride=(1, 1), ReLu, bias=True):
+		# conv C 3*2
+		conv_C = []
+		conv_C += [
+					nn.functional.pad(input, [[0, 0], [1, 1], [0, 1], [0, 0]]),
+					nn.Conv2d(channels_in, channels_out, kernel_size=(3, 2), stride=stride, padding=0, bias=bias)
+					]
+		return nn.Sequential(*conv_C)
+
+	def get_conv_D(self, input, channels_in, channels_out, stride=(1, 1), ReLu, bias=True):
+		# conv D 2*2
+		conv_D = []
+		conv_D += [	nn.functional.pad(input, [[0, 0], [0, 1], [0, 1], [0, 0]]),
+					nn.Conv2d(channels_in, channels_out, kernel_size=(2, 2), stride=stride, padding=0, bias=bias)
+				  ]
+		return nn.Sequential(*conv_D)
+
+	def forward(self, input):
+		outputA = self.conv_A(input)
+		outputB = self.conv_B(input)
+		outputC = self.conv_C(input)
+		outputD = self.conv_D(input)
+		left = interleave([outputA, outputB], axis=1)
+		right = interleave([outputC, outputD], axis=1)
+
+		if BN:
+			Y = nn.BatchNorm2d(channels_out)
+		if ReLu:
+			Y = nn.functional.ReLu()  #  no learned params to store
+		return Y
+
+class up_project(unpool_as_conv):
+	def __init__(self, size, id, stride, BN=True):
+		super(up_project, self).__init__()
+		self.unpool_as_conv_1 = unpool_as_conv()
+
+	def forward(self, input):
+		pass
 
 
-def up_project():
