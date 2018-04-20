@@ -95,6 +95,26 @@ def print_network(net):
     print('Total number of parameters: %d' % num_params)
 
 
+def define_FCRN(input_nc=3, output_nc=1, which_model_fcrn='resnet50', use_dropout=False, init_type='normal', gpu_ids=[]):
+	net_fcrn = None
+	use_gpu = len(gpu_ids) > 0
+
+	if use_gpu:
+		assert(torch.cuda.is_available())
+	if which_model_fcrn = 'resnet50':
+		net_fcrn = FCRN_Res50(input_nc=input_nc, output_nc=output_nc, use_dropout=use_dropout, gpu_ids=gpu_ids)
+	elif which_model_fcrn = 'vgg16':
+		raise NotImplementedError('vgg16 based fcrn not implemented!')
+	elif which_model_fcrn = 'alex':
+		raise NotImplementedError('alex based fcrn not implemented!')
+	else:
+		raise NotImplementedError('unkonwn net version')
+
+	if use_gpu:
+		net_fcrn.cuda(gpu_ids[0])
+	init_weights(net_fcrn, init_type=init_type)
+
+
 class FCRN_Vgg16():
 	pass
 
@@ -106,34 +126,12 @@ def batch_normalization():
 	pass
 
 class FCRN_Res50(torch.nn.Module):
-	def __init__(self, input_nc=3, output_nc=1, n_blocks=9, use_dropout=False, gpu_ids=[]):
-		assert(n_blocks >= 0)
+	def __init__(self, input_nc=3, output_nc=1, use_dropout=False, gpu_ids=[]):
 		super(FCRN_Res50, self).__init__()
 		self.input_nc = input_nc
 		self.output_nc = output_nc
 		self.gpu_ids = gpu_ids
 		self.training = True
-
-'''
-		# block 1
-		self.conv7_2 = nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=0, bias=True)
-		self.bn1_1 = nn.BatchNorm2d(64)
-		self.relu1_1 = nn.Relu()
-		self.maxpool_1 = nn.Maxpool2d(kernel_size=(3, 3), stride=(2, 2))
-		self.conv1_1 = nn.Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), padding=0, bias=False)
-		self.bn1_2 = nn.BatchNorm2d(256)
-
-		# block 2
-		self.ResidualBlock_Projection_64_256 = ResidualBlock_Projection(64, 256)
-		self.ResidualBlock_Projection_128_512 = ResidualBlock_Projection(128, 512)
-		self.ResidualBlock_Projection_256_1024 = ResidualBlock_Projection(256, 1024)
-		self.ResidualBlock_Projection_512_2048 = ResidualBlock_Projection(512, 2048)
-		# block 3
-		self.ResidualBlock_Skip_64_256 = ResidualBlock_Skip(64, 256)
-		self.ResidualBlock_Skip_128_512 = ResidualBlock_Skip(128, 512)
-		self.ResidualBlock_Skip_256_1024 = ResidualBlock_Skip(256, 1024)
-		self.ResidualBlock_Skip_512_2048 = ResidualBlock_Skip(512, 2048)
-'''
 
 		model = [nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=0, bias=True),
 				 nn.BatchNorm2d(64),
