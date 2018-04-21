@@ -63,7 +63,7 @@ class NYUDDataset(BaseDataset):
         #     B = tmp.unsqueeze(0)
 
         return {'A': A, 'B': B,
-                'A_paths': A_path, 'B_paths': A_path}
+                'A_paths': A_path, 'B_paths': B_path}
 
     # return count of imgs under nyud/train/img (just for example)
     def __len__(self):

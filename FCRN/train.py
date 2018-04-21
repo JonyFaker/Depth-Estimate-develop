@@ -11,7 +11,7 @@ if __name__ == '__main__':
     dataset_size = len(data_loader)
     print('#training images = %d' % dataset_size)
 
-    model = create_model(opt)
+    model = create_model(opt)  # has been initialized
     visualizer = Visualizer(opt)
     total_steps = 0
 
@@ -27,10 +27,9 @@ if __name__ == '__main__':
             visualizer.reset()
             total_steps += opt.batchSize
             epoch_iter += opt.batchSize
-            
-            model.train()
-            model.set_input(data)
-            model.optimize_parameters()
+            model.train(data)
+            # model.set_input(data)
+            # model.optimize_parameters()
 
             if total_steps % opt.display_freq == 0:
                 save_result = total_steps % opt.update_html_freq == 0
