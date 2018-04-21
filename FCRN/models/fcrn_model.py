@@ -18,7 +18,13 @@ class FCRN_Model(BaseModel):
 		self.FCRN = networks.define_FCRN(opt.input_nc, opt.output_nc, opt.which_model_fcrn, not opt.use_dropout, opt.init_type, self.gpu_ids)
 
 		if self.isTrain:
-			pass
+			self.criterionL2 = torch.nn.MSELoss().cuda()
+			# self.optimizer = torch.optim.Adam(self.FCRN.parameters(),
+			# 					lr=opt.lr, betas=(opt.beta1, 0.999))
+			self.optimizer = torch.optim.SGD(self.FCRN.parameters(),
+								lr=opt.lr, momentum=args.momentum)
+			
+
 	
 
 	def set_input(self, input):
@@ -33,14 +39,17 @@ class FCRN_Model(BaseModel):
 
 
 	def forward(self):
-		
-
+		self.input = Variable(self.input_A)
+		self.output = self.FCRN(input)
+		self.gd = Variable(self.input_B)
 
 	def test(self):
-		pass
+		self.input = Variable(self.input_A, volatile=True)
+		self.output = self.FCRN(input)
+		self.gd = Variable(self.input_B, volatile=True)
 
 	def get_image_paths(self):
-		pass
+		return self.image_paths
 
 	def backward(self):
 		pass
