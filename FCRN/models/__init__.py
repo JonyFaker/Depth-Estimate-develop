@@ -1,6 +1,6 @@
 def create_model(opt):
     model = None
-    elif opt.model == 'fcrn':
+    if opt.model == 'fcrn':
         assert(opt.dataset_mode == 'nyud')
         from .fcrn_model import FCRN_Model
         model = FCRN_Model()

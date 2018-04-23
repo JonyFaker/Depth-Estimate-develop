@@ -11,7 +11,7 @@ def CreateDataLoader(opt):
 
 def CreateDataset(opt):
     dataset = None
-    elif opt.dataset_mode == 'nyud':
+    if opt.dataset_mode == 'nyud':
         from data.nyud_dataset import NYUDDataset
         dataset = NYUDDataset()
     else:

@@ -68,23 +68,23 @@ def init_weights(net, init_type='normal'):
     else:
         raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
 
-def define_fcrn(self, input_nc, output_nc, ngf=64, which_model, init_type='normal', gpu_ids=[]):
-	net_fcrn = None
-	use_gpu = len(gpu_ids) > 0
-	# norm_layer for what?
+# def define_fcrn(self, input_nc, output_nc, ngf=64, which_model, init_type='normal', gpu_ids=[]):
+# 	net_fcrn = None
+# 	use_gpu = len(gpu_ids) > 0
+# 	# norm_layer for what?
 
-	if use_gpu:
-		assert(torch.cuda.is_available())
-	if which_model == 'resnet50':
-		net_fcrn = FCRN_Res50(input_nc, output_nc, ngf, gpu_ids=gpu_ids)
-	else:
-		raise NotImplementedError('model name [%s] is not recognized' %
-                                  which_model)
+# 	if use_gpu:
+# 		assert(torch.cuda.is_available())
+# 	if which_model == 'resnet50':
+# 		net_fcrn = FCRN_Res50(input_nc, output_nc, ngf, gpu_ids=gpu_ids)
+# 	else:
+# 		raise NotImplementedError('model name [%s] is not recognized' %
+#                                   which_model)
 
-	if use_gpu:
-		net_fcrn.cuda(gpu_ids[0])
-	init_weights(net_fcrn, init_type=init_type)
-	return net_fcrn
+# 	if use_gpu:
+# 		net_fcrn.cuda(gpu_ids[0])
+# 	init_weights(net_fcrn, init_type=init_type)
+# 	return net_fcrn
 
 
 def print_network(net):
@@ -101,11 +101,11 @@ def define_FCRN(input_nc=3, output_nc=1, which_model_fcrn='resnet50', use_dropou
 
 	if use_gpu:
 		assert(torch.cuda.is_available())
-	if which_model_fcrn = 'resnet50':
+	if which_model_fcrn == 'resnet50':
 		net_fcrn = FCRN_Res50(input_nc=input_nc, output_nc=output_nc, use_dropout=use_dropout, gpu_ids=gpu_ids)
-	elif which_model_fcrn = 'vgg16':
+	elif which_model_fcrn == 'vgg16':
 		raise NotImplementedError('vgg16 based fcrn not implemented!')
-	elif which_model_fcrn = 'alex':
+	elif which_model_fcrn == 'alex':
 		raise NotImplementedError('alex based fcrn not implemented!')
 	else:
 		raise NotImplementedError('unkonwn net version')
@@ -113,6 +113,7 @@ def define_FCRN(input_nc=3, output_nc=1, which_model_fcrn='resnet50', use_dropou
 	if use_gpu:
 		net_fcrn.cuda(gpu_ids[0])
 	init_weights(net_fcrn, init_type=init_type)
+	return net_fcrn
 
 
 class FCRN_Vgg16():
@@ -196,13 +197,13 @@ class ResidualBlock_Skip(torch.nn.Module):
 	def __init__(self, channels_in, channels_out):
 		super(ResidualBlock_Skip, self).__init__()
 		block = []
-		block += [	nn.Conv2d(channels_in, channels_in, kernel_size=(1, 1), stride=(1, 1), bias=False)
-					nn.BatchNorm2d(channels_in)
-					nn.ReLu()
-					nn.Conv2d(channels_in, channels_in, kernel_size=(3, 3), stride=(1, 1), bias=False)
-					nn.BatchNorm2d(channels_in)
-					nn.ReLu()
-					nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=(1, 1), bias=False)
+		block += [	nn.Conv2d(channels_in, channels_in, kernel_size=(1, 1), stride=(1, 1), bias=False),
+					nn.BatchNorm2d(channels_in),
+					nn.ReLu(),
+					nn.Conv2d(channels_in, channels_in, kernel_size=(3, 3), stride=(1, 1), bias=False),
+					nn.BatchNorm2d(channels_in),
+					nn.ReLu(),
+					nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=(1, 1), bias=False),
 					nn.BatchNorm2d(channels_out)
 				]
 
@@ -223,13 +224,13 @@ class ResidualBlock_Projection(torch.nn.Module):
 
 	def build_block_A(channels_in, channels_out, stride=(1, 1)):
 		block_A = []
-		block_A += [nn.Conv2d(channels_in, channels_in, kernel_size=(1, 1), stride=stride)
-					nn.BatchNorm2d(channels_in)
-					nn.ReLu()
-					nn.Conv2d(channels_in, channels_in, kernel_size=(3, 3), stride=(1, 1))
-					nn.BatchNorm2d(channels_in)
-					nn.ReLu()
-					nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=(1,1))
+		block_A += [nn.Conv2d(channels_in, channels_in, kernel_size=(1, 1), stride=stride),
+					nn.BatchNorm2d(channels_in),
+					nn.ReLu(),
+					nn.Conv2d(channels_in, channels_in, kernel_size=(3, 3), stride=(1, 1)),
+					nn.BatchNorm2d(channels_in),
+					nn.ReLu(),
+					nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=(1,1)),
 					nn.BatchNorm2d(channels_out)
 					]
 					
@@ -237,7 +238,7 @@ class ResidualBlock_Projection(torch.nn.Module):
 		
 	def build_block_B(channels_in, channels_out):
 		block_B = []
-		block_B += [nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=stride)
+		block_B += [nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=stride),
 					nn.BatchNorm2d(channels_out)
 					]
 
@@ -249,7 +250,6 @@ class ResidualBlock_Projection(torch.nn.Module):
 
 
 def get_incoming_shape(incoming):
-	list shape = []
 	if isinstance(incoming, torch.cuda.FloatTensor) or isinstance(incoming, torch.FloatTensor):
 		shape = list(incoming.size())
 		return shape
@@ -270,15 +270,15 @@ def interleave(inputs, axis):
 	
 
 class unpool_as_conv(nn.Module):
-	def __init__(self, channels_in, channels_out, stride, ReLu=False, BN):
+	def __init__(self, channels_in, channels_out, stride, BN, ReLu=False):
 		super(unpool_as_conv, self).__init__()
-		self.conv_A = self.get_conv_A(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
-		self.conv_B = self.get_conv_B(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
-		self.conv_C = self.get_conv_C(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
-		self.conv_D = self.get_conv_D(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True)
+		self.conv_A = self.get_conv_A(self, channels_in, channels_out, ReLu, stride=(1, 1), bias=True)
+		self.conv_B = self.get_conv_B(self, channels_in, channels_out, ReLu, stride=(1, 1), bias=True)
+		self.conv_C = self.get_conv_C(self, channels_in, channels_out, ReLu, stride=(1, 1), bias=True)
+		self.conv_D = self.get_conv_D(self, channels_in, channels_out, ReLu, stride=(1, 1), bias=True)
 		self.bn = nn.BatchNorm2d(channels_out)
 
-	def get_conv_A(self, channels_in, channels_out, stride=(1, 1), ReLu, bias=True):
+	def get_conv_A(self, channels_in, channels_out, ReLu, stride=(1, 1), bias=True):
 		# conv A 3*3
 		conv_A = []
 		conv_A += [  ## tf: self.conv( 3, 3, size[3], stride, stride, name = layerName, padding = 'SAME', relu = False)
@@ -286,7 +286,7 @@ class unpool_as_conv(nn.Module):
 				  ]
 		return nn.Sequential(*conv_A)
 
-	def get_conv_B(self, input, channels_in, channels_out, stride=(1,1), ReLu, bias=True):
+	def get_conv_B(self, input, channels_in, channels_out, ReLu, stride=(1,1), bias=True):
 		# conv B 2*3
 		conv_B = []
 		conv_B += [
@@ -295,7 +295,7 @@ class unpool_as_conv(nn.Module):
 					]
 		return nn.Sequential(*conv_B)
 
-	def get_conv_C(self, input, channels_in, channels_out, stride=(1, 1), ReLu, bias=True):
+	def get_conv_C(self, input, channels_in, channels_out, ReLu, stride=(1, 1), bias=True):
 		# conv C 3*2
 		conv_C = []
 		conv_C += [
@@ -304,7 +304,7 @@ class unpool_as_conv(nn.Module):
 					]
 		return nn.Sequential(*conv_C)
 
-	def get_conv_D(self, input, channels_in, channels_out, stride=(1, 1), ReLu, bias=True):
+	def get_conv_D(self, input, channels_in, channels_out, ReLu, stride=(1, 1), bias=True):
 		# conv D 2*2
 		conv_D = []
 		conv_D += [	# nn.functional.pad(input, [[0, 0], [0, 1], [0, 1], [0, 0]]),
@@ -334,7 +334,7 @@ class unpool_as_conv(nn.Module):
 		return Y
 
 class up_project(nn.Module):
-	def __init__(self, kernel_size=(3, 3),channels_in, channels_out, id, stride=(1, 1), BN=True):
+	def __init__(self, channels_in, channels_out, id, kernel_size=(3, 3), stride=(1, 1), BN=True):
 		super(up_project, self).__init__()
 		self.unpool_as_conv = unpool_as_conv(channels_in, channels_out, stride = stride, Relu=True, BN = True)
 		self.conv = nn.Conv2d(channels_in, channels_out, kernel_size=kernel_size, stride=stride, padding=0, bias=True)
