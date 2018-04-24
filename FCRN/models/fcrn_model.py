@@ -15,18 +15,21 @@ class FCRN_Model(BaseModel):
 		BaseModel.initialize(self, opt)
 		self.isTrain = opt.isTrain
 
-		self.FCRN = networks.define_FCRN(opt.input_nc, opt.output_nc, opt.which_model_fcrn, not opt.use_dropout, opt.init_type, self.gpu_ids)
+		self.FCRN = networks.define_FCRN(opt.input_nc, opt.output_nc, opt.which_model_fcrn, not opt.no_dropout, opt.init_type, self.gpu_ids)
+		print(self.FCRN)
+		# networks.print_network(net=self.FCRN)
 
 		if self.isTrain:
 			self.criterionMSE = torch.nn.MSELoss().cuda()
 			# self.optimizer = torch.optim.Adam(self.FCRN.parameters(),
 			# 					lr=opt.lr, betas=(opt.beta1, 0.999))
-			self.optimizer = torch.optim.SGD(self.FCRN.parameters(),
-								lr=opt.lr, momentum=args.momentum)
+			FCRN_parameter = list(self.FCRN.parameters())
+			self.optimizer = torch.optim.SGD(FCRN_parameter,
+								lr=opt.lr, momentum=opt.momentum)
 
 
 		print('---------- Networks initialized -------------')
-        networks.print_network(self.FCRN)
+        networks.print_network(net=self.FCRN)
         print('-----------------------------------------------')
 
 	# def set_input(self, input):
@@ -84,7 +87,7 @@ class FCRN_Model(BaseModel):
 
 	def train(self, input):
 		# initialize(opt)
-		net_output, gd = forward(input)
+		net_output, gd = self.forward(input)
 		self.optimizer.zero_grad()
 		backward(net_output, gd)
 		self.optimizer.step()

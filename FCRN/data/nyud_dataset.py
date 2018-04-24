@@ -27,8 +27,8 @@ class NYUDDataset(BaseDataset):
         # AB = Image.open(AB_path).convert('RGB')
         # w, h = AB.size
         # w2 = int(w / 2)
-        A = A.resize((self.opt.loadSize, self.opt.loadSize), Image.BICUBIC)
-        B = B.resize((self.opt.loadSize, self.opt.loadSize), Image.BICUBIC)
+        A = A.resize((self.opt.loadSize_w, self.opt.loadSize_h), Image.BICUBIC)
+        B = B.resize((self.opt.loadSize_w, self.opt.loadSize_h), Image.BICUBIC)
         A = transforms.ToTensor()(A)
         B = transforms.ToTensor()(B)
         # w_offset = random.randint(0, max(0, self.opt.loadSize - self.opt.fineSize - 1))
