@@ -127,6 +127,14 @@ class FCRN_Alex():
 def batch_normalization():
 	pass
 
+class PadLayer(nn.Module):
+	def __init__(self, kernel_size=1):
+		super(PadLayer, self).__init__()
+		self.kernel_size = kernel_size
+
+	def forward(self, input):
+		return nn.functional.pad(input, (0, 0, 0, 0, (self.kernel_size-1)//2, (self.kernel_size-1)//2, (self.kernel_size-1)//2, (self.kernel_size-1)//2))
+
 class FCRN_Res50(torch.nn.Module):
 	def __init__(self, input_nc=3, output_nc=1, use_dropout=False, gpu_ids=[]):
 		super(FCRN_Res50, self).__init__()
@@ -135,11 +143,12 @@ class FCRN_Res50(torch.nn.Module):
 		self.gpu_ids = gpu_ids
 		self.training = True
 
-		model = [nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=0, bias=True),
-				 nn.functional.pad(input, [[0, 0], [(7-1)//2, (7-1)//2], [(7-1)//2, (7-1)//2], [0, 0]]),
+		model = [nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=((7-1)//2, (7-1)//2), bias=True),
+				 # nn.functional.pad(input, (0, 0, 0, 0, (7-1)//2, (7-1)//2, (7-1)//2, (7-1)//2)),
+				 # PadLayer(7),
 				 nn.BatchNorm2d(64),
 				 nn.ReLU(),
-				 nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2)),
+				 nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=1),
 				 ResidualBlock_Projection(64, 64, 256),
 				 nn.ReLU(),
 				 ResidualBlock_Skip(256, 64, 256),
@@ -188,10 +197,16 @@ class FCRN_Res50(torch.nn.Module):
 
 
 	def forward(self, input):
-		if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
-			return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
-		else:
-			return self.mode(input)
+		# if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+		# 	return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
+		# else:
+			#return self.model(input)
+		x = input
+		for name, layer in self.model._modules.items():
+			x = layer(x)
+			print(name)
+			print(x.size())
+		return x
 
 
 
@@ -199,20 +214,23 @@ class ResidualBlock_Skip(torch.nn.Module):
 	def __init__(self, channels_in, channels_middle, channels_out, stride_1=(1,1), stride_2=(1,1), stride_3=(1,1)):
 		super(ResidualBlock_Skip, self).__init__()
 		block = []
-		block += [	nn.Conv2d(channels_in, channels_middle, kernel_size=(1, 1), stride=stride_1, bias=False),
-					nn.functional.pad(input, [[0, 0], [(1-1)//2, (1-1)//2], [(1-1)//2, (1-1)//2], [0, 0]]),
-					nn.BatchNorm2d(channels_in),
+		block += [	nn.Conv2d(channels_in, channels_middle, kernel_size=(1, 1), padding=((1-1)//2, (1-1)//2), stride=stride_1, bias=False),
+					# nn.functional.pad(input, (0, 0, 0, 0, (1-1)//2, (1-1)//2, (1-1)//2, (1-1)//2)),
+					# PadLayer(1),
+					nn.BatchNorm2d(channels_middle),
 					nn.ReLU(),
-					nn.Conv2d(channels_middle, channels_middle, kernel_size=(3, 3), stride=stride_2, bias=False),
-					nn.functional.pad(input, [[0, 0], [(3-1)//2, (3-1)//2], [(3-1)//2, (3-1)//2], [0, 0]]),
-					nn.BatchNorm2d(channels_in),
+					nn.Conv2d(channels_middle, channels_middle, kernel_size=(3, 3), padding=((3-1)//2, (3-1)//2), stride=stride_2, bias=False),
+					# nn.functional.pad(input, (0, 0, 0, 0, (3-1)//2, (3-1)//2, (3-1)//2, (3-1)//2)),
+					# PadLayer(3),
+					nn.BatchNorm2d(channels_middle),
 					nn.ReLU(),
-					nn.Conv2d(channels_middle, channels_out, kernel_size=(1, 1), stride=stride_3, bias=False),
-					nn.functional.pad(input, [[0, 0], [(1-1)//2, (1-1)//2], [(1-1)//2, (1-1)//2], [0, 0]]),
+					nn.Conv2d(channels_middle, channels_out, kernel_size=(1, 1), padding=((1-1)//2, (1-1)//2), stride=stride_3, bias=False),
+					# nn.functional.pad(input, (0, 0, 0, 0, (1-1)//2, (1-1)//2, (1-1)//2, (1-1)//2)),
+					# PadLayer(1),
 					nn.BatchNorm2d(channels_out)
 				]
 
-		self.block = block
+		self.block = nn.Sequential(*block)
 
 
 	def forward(self, input):
@@ -229,16 +247,19 @@ class ResidualBlock_Projection(torch.nn.Module):
 	def build_block_A(self, channels_in, channels_middle, channels_out, stride_1, stride_2, stride_3):
 		print(channels_in, channels_out)
 		block_A = []
-		block_A += [nn.Conv2d(channels_in, channels_middle, kernel_size=(1, 1), stride=stride_1),
-					nn.functional.pad(input, [[0, 0], [(1-1)//2, (1-1)//2], [(1-1)//2, (1-1)//2], [0, 0]]),
-					nn.BatchNorm2d(channels_in),
+		block_A += [nn.Conv2d(channels_in, channels_middle, kernel_size=(1, 1), padding=((1-1)//2, (1-1)//2), stride=stride_1),
+					# nn.functional.pad(input, (0, 0, 0, 0, (1-1)//2, (1-1)//2, (1-1)//2, (1-1)//2)),
+					# PadLayer(1),
+					nn.BatchNorm2d(channels_middle),
 					nn.ReLU(),
-					nn.Conv2d(channels_middle, channels_middle, kernel_size=(3, 3), stride=stride_2),
-					nn.functional.pad(input, [[0, 0], [(3-1)//2, (3-1)//2], [(3-1)//2, (3-1)//2], [0, 0]]),
-					nn.BatchNorm2d(channels_in),
+					nn.Conv2d(channels_middle, channels_middle, kernel_size=(3, 3), padding=((3-1)//2, (3-1)//2), stride=stride_2),
+					# nn.functional.pad(input, (0, 0, 0, 0, (3-1)//2, (3-1)//2, (3-1)//2, (3-1)//2)),
+					# PadLayer(3),
+					nn.BatchNorm2d(channels_middle),
 					nn.ReLU(),
-					nn.Conv2d(channels_middle, channels_out, kernel_size=(1, 1), stride=stride_3),
-					nn.functional.pad(input, [[0, 0], [(1-1)//2, (1-1)//2], [(1-1)//2, (1-1)//2], [0, 0]]),
+					nn.Conv2d(channels_middle, channels_out, kernel_size=(1, 1), padding=((1-1)//2, (1-1)//2), stride=stride_3),
+					# nn.functional.pad(input, (0, 0, 0, 0, (1-1)//2, (1-1)//2, (1-1)//2, (1-1)//2)),
+					# PadLayer(1),
 					nn.BatchNorm2d(channels_out)
 					]
 					
@@ -246,8 +267,9 @@ class ResidualBlock_Projection(torch.nn.Module):
 		
 	def build_block_B(self, channels_in, channels_out, stride_1):
 		block_B = []
-		block_B += [nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), stride=stride_1),
-					nn.functional.pad(input, [[0, 0], [(1-1)//2, (1-1)//2], [(1-1)//2, (1-1)//2], [0, 0]]),
+		block_B += [nn.Conv2d(channels_in, channels_out, kernel_size=(1, 1), padding=((1-1)//2, (1-1)//2) , stride=stride_1),
+					# nn.functional.pad(input, (0, 0, 0, 0, (1-1)//2, (1-1)//2, (1-1)//2, (1-1)//2)),
+					# PadLayer(1),
 					nn.BatchNorm2d(channels_out)
 					]
 
@@ -325,13 +347,16 @@ class unpool_as_conv(nn.Module):
 		# outputA = self.conv_A(input, channels_in, channels_out)
 		outputA = self.conv_A(input)
 
-		inputB = nn.functional.pad(input, [[0, 0], [0, 1], [1, 1], [0, 0]])
+		# inputB = nn.functional.pad(input, (0, 0, 0, 0, 0, 1, 1, 1))
+		inputB = nn.functional.pad(input, (1, 1, 0, 1,))
 		outputB = self.conv_B(inputB)
 		
-		inputC = nn.functional.pad(input, [[0, 0], [1, 1], [0, 1], [0, 0]])
+		# inputC = nn.functional.pad(input, (0, 0, 0, 0, 1, 1, 0, 1))
+		inputC = nn.functional.pad(input, (0, 1, 1, 1))
 		outputC = self.conv_C(inputC)
 		
-		inputD = nn.functional.pad(input, [[0, 0], [0, 1], [0, 1], [0, 0]])
+		# inputD = nn.functional.pad(input, (0, 0, 0, 0, 0, 1, 0, 1))
+		inputD = nn.functional.pad(input, (0, 1, 0, 1))
 		outputD = self.conv_D(inputD)
 
 		left = interleave([outputA, outputB], axis=1)

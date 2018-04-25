@@ -23,8 +23,7 @@ class FCRN_Model(BaseModel):
 			self.criterionMSE = torch.nn.MSELoss().cuda()
 			# self.optimizer = torch.optim.Adam(self.FCRN.parameters(),
 			# 					lr=opt.lr, betas=(opt.beta1, 0.999))
-			FCRN_parameter = list(self.FCRN.parameters())
-			self.optimizer = torch.optim.SGD(FCRN_parameter,
+			self.optimizer = torch.optim.SGD(self.FCRN.parameters(),
 								lr=opt.lr, momentum=opt.momentum)
 
 
