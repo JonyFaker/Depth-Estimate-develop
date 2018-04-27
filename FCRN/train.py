@@ -28,8 +28,6 @@ if __name__ == '__main__':
             total_steps += opt.batchSize
             epoch_iter += opt.batchSize
             model.train(data)
-            # model.set_input(data)
-            # model.optimize_parameters()
 
             if total_steps % opt.display_freq == 0:
                 save_result = total_steps % opt.update_html_freq == 0

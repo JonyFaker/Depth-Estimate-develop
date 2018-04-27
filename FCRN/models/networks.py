@@ -7,6 +7,22 @@ from torch.optim import lr_scheduler
 import numpy as np
 import pdb
 
+
+def get_scheduler(optimizer, opt):
+    if opt.lr_policy == 'lambda':
+        def lambda_rule(epoch):
+            lr_l = 1.0 - max(0, epoch + 1 + opt.epoch_count - opt.niter) / float(opt.niter_decay + 1)
+            return lr_l
+        scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_rule)
+    elif opt.lr_policy == 'step':
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=opt.lr_decay_iters, gamma=0.1)
+    elif opt.lr_policy == 'plateau':
+        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.01, patience=5)
+    else:
+        return NotImplementedError('learning rate policy [%s] is not implemented', opt.lr_policy)
+    return scheduler
+
+    
 ###################################
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -190,7 +206,7 @@ class FCRN_Res50(torch.nn.Module):
 				 up_project(256, 128),
 				 up_project(128, 64),
 
-				 nn.Conv2d(64, 1, kernel_size=(3, 3), stride=(1, 1), padding=0, bias=True)
+				 nn.Conv2d(64, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=True)
 
 				]
 		self.model = nn.Sequential(*model)
@@ -291,13 +307,20 @@ def interleave(inputs, axis):
 	old_shape = get_incoming_shape(inputs[0])[1:]
 	new_shape = [-1] + old_shape
 	new_shape[axis] *= len(inputs)
-	# tensor to numpy
-	array1 = inputs.numpy()
-	inputs_stack = np.stack(inputs, axis+1)
-	inputs_stack.reshape(new_shape)
-	# numpy to tensor
-	torch_data = torch.from_numpy(inputs_stack)
-	return torch_data
+
+	return torch.stack(inputs, axis+1).view(new_shape)
+
+	# # tensor to numpy
+
+	# array1 = inputs[0].numpy()
+	# array2 = inputs[1].numpy()
+	# inputs_stack = np.stack([array1, array2], axis+1)
+	# inputs_stack.reshape(new_shape)
+	# # numpy to tensor
+	# torch_data = torch.from_numpy(inputs_stack)
+	# # if torch.cuda.is_available():
+	# # 	torch_data = torch_data.cuda()
+	# return torch_data
 	
 
 class unpool_as_conv(nn.Module):
@@ -308,6 +331,8 @@ class unpool_as_conv(nn.Module):
 		self.conv_C = self.get_conv_C(channels_in, channels_out, True, stride)
 		self.conv_D = self.get_conv_D(channels_in, channels_out, True, stride)
 		self.bn = nn.BatchNorm2d(channels_out)
+		self.BN = BN
+		self.RELU = RELU
 
 	def get_conv_A(self, channels_in, channels_out, bias, stride=(1, 1)):
 		# conv A 3*3
@@ -359,31 +384,31 @@ class unpool_as_conv(nn.Module):
 		inputD = nn.functional.pad(input, (0, 1, 0, 1))
 		outputD = self.conv_D(inputD)
 
-		left = interleave([outputA, outputB], axis=1)
-		right = interleave([outputC, outputD], axis=1)
-		Y = interleave([left, right], axis=2)
-		if BN:
-			Y = self.bn(channels_out)
-		if RELU:
+		left = interleave([outputA, outputB], axis=2)
+		right = interleave([outputC, outputD], axis=2)
+		Y = interleave([left, right], axis=3)
+		if self.BN:
+			Y = self.bn(Y)
+		if self.RELU:
 			Y = nn.functional.relu(Y)
 		return Y
 
 class up_project(nn.Module):
 	def __init__(self, channels_in, channels_out, kernel_size=(3, 3), stride=(1, 1), BN=True):
 		super(up_project, self).__init__()
-		self.unpool_as_conv = unpool_as_conv(channels_in=channels_in, channels_out=channels_out, stride=stride, RELU=True, BN=True)
-		self.conv = nn.Conv2d(channels_in, channels_out, kernel_size=kernel_size, stride=stride, padding=0, bias=True)
+		self.unpool_as_conv_1 = unpool_as_conv(channels_in=channels_in, channels_out=channels_out, stride=stride, RELU=True, BN=True)
+		self.unpool_as_conv_2 = unpool_as_conv(channels_in=channels_in, channels_out=channels_out, stride=stride, RELU=False, BN=True)
+		self.conv = nn.Conv2d(channels_out, channels_out, kernel_size=kernel_size, stride=stride, padding=(1, 1), bias=True)
 		self.bn = nn.BatchNorm2d(channels_out)
 
-
 	def forward(self, input):
-		output_temp = self.unpool_as_conv(input)
-		branch1_output = self.conv(output_temp)
-		if BN:
-			branch1_output = self.bn(channels_out)
+		output_temp = self.unpool_as_conv_1(input)
+		branch1_output_temp = self.conv(output_temp)
+		branch1_output = self.bn(branch1_output_temp)
 
-		branch2_output = self.unpool_as_conv(branch1_output)
-		output = branch1_output + branch2_output
+		branch2_output = self.unpool_as_conv_2(input)
+		output = torch.add(branch1_output, branch2_output)
+		# output = branch1_output + branch2_output
 		output = nn.functional.relu(output)
 		return output
 

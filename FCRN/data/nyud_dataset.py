@@ -27,8 +27,9 @@ class NYUDDataset(BaseDataset):
         # AB = Image.open(AB_path).convert('RGB')
         # w, h = AB.size
         # w2 = int(w / 2)
-        A = A.resize((self.opt.loadSize_h, self.opt.loadSize_w), Image.BICUBIC)
-        B = B.resize((self.opt.loadSize_h, self.opt.loadSize_w), Image.BICUBIC)
+        A = A.resize((self.opt.loadSize_w, self.opt.loadSize_h), Image.BICUBIC)
+        B = B.resize((160, 128), Image.BICUBIC)
+        # B = B.resize((self.opt.loadSize_h, self.opt.loadSize_w), Image.BICUBIC)
         A = transforms.ToTensor()(A)
         B = transforms.ToTensor()(B)
         # w_offset = random.randint(0, max(0, self.opt.loadSize - self.opt.fineSize - 1))
@@ -48,10 +49,12 @@ class NYUDDataset(BaseDataset):
             output_nc = self.opt.output_nc
 
         if (not self.opt.no_flip) and random.random() < 0.5:
-            idx = [i for i in range(A.size(2) - 1, -1, -1)]
-            idx = torch.LongTensor(idx)
-            A = A.index_select(2, idx)
-            B = B.index_select(2, idx)
+            idx_A = [i for i in range(A.size(2) - 1, -1, -1)]
+            idx_A = torch.LongTensor(idx_A)
+            A = A.index_select(2, idx_A)
+            idx_B = [i for i in range(B.size(2) - 1, -1, -1)]
+            idx_B = torch.LongTensor(idx_B)
+            B = B.index_select(2, idx_B)
 
         if input_nc == 1:  # RGB to gray
             tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114

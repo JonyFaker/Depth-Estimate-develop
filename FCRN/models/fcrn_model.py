@@ -20,11 +20,13 @@ class FCRN_Model(BaseModel):
 		# networks.print_network(net=self.FCRN)
 
 		if self.isTrain:
+			self.schedulers = []
 			self.criterionMSE = torch.nn.MSELoss().cuda()
 			# self.optimizer = torch.optim.Adam(self.FCRN.parameters(),
 			# 					lr=opt.lr, betas=(opt.beta1, 0.999))
 			self.optimizer = torch.optim.SGD(self.FCRN.parameters(),
 								lr=opt.lr, momentum=opt.momentum)
+			self.schedulers.append(networks.get_scheduler(self.optimizer, opt))
 
 
 		print('---------- Networks initialized -------------')
@@ -65,8 +67,10 @@ class FCRN_Model(BaseModel):
 		return self.image_paths
 
 	def backward(self, net_output, gd):
+		print(net_output.size())
+		print(gd.size())
 		self.loss = self.criterionMSE(net_output, gd)
-		loss.backward()
+		self.loss.backward()
 
 
 	def get_current_errors():
@@ -87,8 +91,10 @@ class FCRN_Model(BaseModel):
 	def train(self, input):
 		# initialize(opt)
 		net_output, gd = self.forward(input)
+		print(net_output.size())
+		print(gd.size())
 		self.optimizer.zero_grad()
-		backward(net_output, gd)
+		self.backward(net_output, gd)
 		self.optimizer.step()
 
 

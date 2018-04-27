@@ -57,7 +57,7 @@ class BaseModel(torch.nn.Module):
     def update_learning_rate(self):
         for scheduler in self.schedulers:
             scheduler.step()
-        lr = self.optimizers[0].param_groups[0]['lr']
+        lr = self.optimizer.param_groups[0]['lr']
         print('learning rate = %.7f' % lr)
 
 		
