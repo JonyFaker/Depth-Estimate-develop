@@ -24,7 +24,6 @@ if __name__ == '__main__':
     for i, data in enumerate(dataset):
         if i >= opt.how_many:
             break
-        model.set_input(data)
         model.test()
         visuals = model.get_current_visuals()
         img_path = model.get_image_paths()

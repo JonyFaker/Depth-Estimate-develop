@@ -16,8 +16,7 @@ class FCRN_Model(BaseModel):
 		self.isTrain = opt.isTrain
 
 		self.FCRN = networks.define_FCRN(opt.input_nc, opt.output_nc, opt.which_model_fcrn, not opt.no_dropout, opt.init_type, self.gpu_ids)
-		print(self.FCRN)
-		# networks.print_network(net=self.FCRN)
+		# print(self.FCRN)
 
 		if self.isTrain:
 			self.schedulers = []
@@ -28,6 +27,8 @@ class FCRN_Model(BaseModel):
 								lr=opt.lr, momentum=opt.momentum)
 			self.schedulers.append(networks.get_scheduler(self.optimizer, opt))
 
+		if not self.isTrain or opt.continue_train:
+            self.load_networks(self.FCRN, 'FCRN' ,opt.which_epoch)
 
 		print('---------- Networks initialized -------------')
         networks.print_network(net=self.FCRN)
@@ -58,9 +59,15 @@ class FCRN_Model(BaseModel):
 		return net_output, gd
 
 	def test(self):
-		self.input = Variable(self.input_A, volatile=True)
+		input_A = input['A']
+        input_B = input['B']
+        if len(self.gpu_ids) > 0:
+            input_A = input_A.cuda(self.gpu_ids[0], async=True)
+            input_B = input_B.cuda(self.gpu_ids[0], async=True)
+
+		self.input = Variable(input_A, volatile=True)
 		self.output = self.FCRN(input)
-		self.gd = Variable(self.input_B, volatile=True)
+		self.gd = Variable(input_B, volatile=True)
 
 
 	def get_image_paths(self):
@@ -73,7 +80,7 @@ class FCRN_Model(BaseModel):
 		self.loss.backward()
 
 
-	def get_current_errors():
+	def get_current_errors(self):
 		return OrderedDict([('Loss_MES', self.loss.data[0])
                             ])
 

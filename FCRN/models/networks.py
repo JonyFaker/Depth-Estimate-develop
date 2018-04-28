@@ -220,7 +220,7 @@ class FCRN_Res50(torch.nn.Module):
 		x = input
 		for name, layer in self.model._modules.items():
 			x = layer(x)
-			print(name)
+			# print(name)
 			print(x.size())
 		return x
 
@@ -297,11 +297,12 @@ class ResidualBlock_Projection(torch.nn.Module):
 
 
 def get_incoming_shape(incoming):
-	if isinstance(incoming, torch.cuda.FloatTensor) or isinstance(incoming, torch.FloatTensor):
-		shape = list(incoming.size())
-		return shape
-	else:
-        raise Exception("Invalid incoming tensor.")
+	return list(incoming.size())
+	# if isinstance(incoming, torch.cuda.FloatTensor) or isinstance(incoming, torch.FloatTensor):
+	# 	shape = list(incoming.size())
+	# 	return shape
+	# else:
+ #        raise Exception("Invalid incoming tensor.")
 
 def interleave(inputs, axis):
 	old_shape = get_incoming_shape(inputs[0])[1:]
