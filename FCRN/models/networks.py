@@ -261,7 +261,7 @@ class ResidualBlock_Projection(torch.nn.Module):
 		self.block_B = self.build_block_B(channels_in, channels_out, stride_1)
 
 	def build_block_A(self, channels_in, channels_middle, channels_out, stride_1, stride_2, stride_3):
-		print(channels_in, channels_out)
+		# print(channels_in, channels_out)
 		block_A = []
 		block_A += [nn.Conv2d(channels_in, channels_middle, kernel_size=(1, 1), padding=((1-1)//2, (1-1)//2), stride=stride_1),
 					# nn.functional.pad(input, (0, 0, 0, 0, (1-1)//2, (1-1)//2, (1-1)//2, (1-1)//2)),

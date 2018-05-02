@@ -31,6 +31,7 @@ if __name__ == '__main__':
             model.train(data)
 
             if total_steps % opt.display_freq == 0:
+                print("display_current_results")
                 save_result = total_steps % opt.update_html_freq == 0
                 visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
 
@@ -38,8 +39,11 @@ if __name__ == '__main__':
                 errors = model.get_current_errors()
                 t = (time.time() - iter_start_time) / opt.batchSize
                 visualizer.print_current_errors(epoch, epoch_iter, errors, t, t_data)
-                if opt.display_id > 0:
-                    visualizer.plot_current_errors(epoch, float(epoch_iter) / dataset_size, opt, errors)
+                # if opt.display_id > 0:
+                #     print("plot_current_errors")
+                #     print(epoch)
+                #     print(float(epoch_iter) / dataset_size)
+                #     visualizer.plot_current_errors(epoch, float(epoch_iter) / dataset_size, opt, errors)
 
             if total_steps % opt.save_latest_freq == 0:
                 print('saving the latest model (epoch %d, total_steps %d)' %
