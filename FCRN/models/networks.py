@@ -85,23 +85,25 @@ def init_weights(net, init_type='normal'):
     else:
         raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
 
-# def define_fcrn(self, input_nc, output_nc, ngf=64, which_model, init_type='normal', gpu_ids=[]):
-# 	net_fcrn = None
-# 	use_gpu = len(gpu_ids) > 0
-# 	# norm_layer for what?
 
-# 	if use_gpu:
-# 		assert(torch.cuda.is_available())
-# 	if which_model == 'resnet50':
-# 		net_fcrn = FCRN_Res50(input_nc, output_nc, ngf, gpu_ids=gpu_ids)
-# 	else:
-# 		raise NotImplementedError('model name [%s] is not recognized' %
-#                                   which_model)
+class berHuLoss(nn.Module):
+    def __init__(self):
+        super(berHuLoss,self).__init__()
 
-# 	if use_gpu:
-# 		net_fcrn.cuda(gpu_ids[0])
-# 	init_weights(net_fcrn, init_type=init_type)
-# 	return net_fcrn
+    def forward(self,pred,gt):
+        x = torch.abs(pred - gt)
+        c = 1./5. * torch.max(x)
+        mask_le = x.le(c) # x <= c
+        mask_gt = x.gt(c) # x >  c
+        criterion_part1 = nn.L1Loss()
+        criterion_part2 = nn.MSELoss()
+        loss_part1 = torch.autograd.Variable(torch.zeros(1),requires_grad=True)
+        loss_part2 = torch.autograd.Variable(torch.zeros(1),requires_grad=True)
+        if torch.sum(mask_le).data[0] != 0:
+            loss_part1 = criterion_part1(torch.masked_select(pred,mask_le),torch.masked_select(gt,mask_le))
+        if torch.sum(mask_gt).data[0] != 0:
+            loss_part2 = (criterion_part2(torch.masked_select(pred,mask_gt),torch.masked_select(gt,mask_gt)) + torch.pow(c,2)) / (2*c)
+        return loss_part1 + loss_part2
 
 
 def print_network(net):

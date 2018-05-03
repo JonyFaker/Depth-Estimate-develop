@@ -21,7 +21,8 @@ class FCRN_Model(BaseModel):
 		if self.isTrain:
 			self.schedulers = []
 			# self.criterionMSE = torch.nn.MSELoss().cuda()
-			self.criterionL1 = torch.nn.L1Loss().cuda()
+			# self.criterionL1 = torch.nn.L1Loss().cuda()
+			self.criterionberHu = networks.berHuLoss()
 			self.optimizer = torch.optim.Adam(self.FCRN.parameters(),
 								lr=opt.lr, betas=(opt.beta1, 0.999))
 			# self.optimizer = torch.optim.SGD(self.FCRN.parameters(),
@@ -35,15 +36,6 @@ class FCRN_Model(BaseModel):
         networks.print_network(net=self.FCRN)
         print('-----------------------------------------------')
 
-	# def set_input(self, input):
- #        input_A = input['A']
- #        input_B = input['B']
- #        if len(self.gpu_ids) > 0:
- #            input_A = input_A.cuda(self.gpu_ids[0], async=True)
- #            input_B = input_B.cuda(self.gpu_ids[0], async=True)
- #        self.input_A = input_A
- #        self.input_B = input_B
- #        self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
 	def forward(self, input):
 		input_A = input['A']
@@ -81,7 +73,8 @@ class FCRN_Model(BaseModel):
 		print(net_output.size())
 		print(gd.size())
 		# self.loss = self.criterionMSE(net_output, gd)
-		self.loss = self.criterionL1(net_output, gd)
+		# self.loss = self.criterionL1(net_output, gd)
+		self.loss = self.criterionberHu(net_output, gd)
 		self.loss.backward()
 
 
@@ -101,10 +94,7 @@ class FCRN_Model(BaseModel):
 
 
 	def train(self, input):
-		# initialize(opt)
 		net_output, gd = self.forward(input)
-		# print(net_output.size())
-		# print(gd.size())
 		self.optimizer.zero_grad()
 		self.backward(net_output, gd)
 		self.optimizer.step()
