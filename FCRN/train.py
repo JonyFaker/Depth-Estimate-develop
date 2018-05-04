@@ -3,6 +3,7 @@ from options.train_options import TrainOptions
 from data import CreateDataLoader
 from models import create_model
 from util.visualizer import Visualizer
+from util.laplotter import LossAccPlotter
 import pdb
 
 if __name__ == '__main__':
@@ -12,9 +13,18 @@ if __name__ == '__main__':
     dataset_size = len(data_loader)
     print('#training images = %d' % dataset_size)
 
+    # validate
+    opt.phase = 'val'
+    validation_loader = CreateDataLoader(opt)
+    validation_dataset = validation_loader.load_data()
+    validation_dataset_size = len(validation_loader)
+    print('validate images = %d' % validation_dataset_size)
+
     model = create_model(opt)  # has been initialized
     visualizer = Visualizer(opt)
     total_steps = 0
+
+    plotter = LossAccPlotter(save_to_filepath='./checkpoints/nyud_fcrn/')
 
     for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
         epoch_start_time = time.time()
@@ -31,12 +41,15 @@ if __name__ == '__main__':
             model.train(data)
 
             if total_steps % opt.display_freq == 0:
-                print("display_current_results")
                 save_result = total_steps % opt.update_html_freq == 0
                 visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
 
             if total_steps % opt.print_freq == 0:
                 errors = model.get_current_errors()
+
+                # pdb.set_trace()
+                plotter.add_values(epoch, loss_train=errors['Loss'])
+                
                 t = (time.time() - iter_start_time) / opt.batchSize
                 visualizer.print_current_errors(epoch, epoch_iter, errors, t, t_data)
                 # if opt.display_id > 0:
@@ -57,6 +70,16 @@ if __name__ == '__main__':
             model.save('latest')
             model.save(epoch)
 
+            # validate every save_epoch_freq(5)
+            for i, data_val in enumerate(validation_loader):
+                if i == 10:
+                    break
+                model.test(data)
+                errors_val = model.get_current_val_errors()
+                visualizer.print_current_val_errors(epoch, epoch_iter, errors_val)
+
+
         print('End of epoch %d / %d \t Time Taken: %d sec' %
               (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate()
+    plotter.block()

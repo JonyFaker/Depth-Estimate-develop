@@ -1,1 +1,1 @@
-python test.py --dataroot ../datasets/nyud --name nyud_fcrn --model fcrn --which_model_netG unet_256 --which_direction AtoB --which_epoch 25 --lambda_A 100 --dataset_mode nyud --no_lsgan --norm batch --pool_size 0
+python test.py --dataroot ../datasets/nyud --name nyud_fcrn --model fcrn --which_direction AtoB --lambda_A 100 --dataset_mode nyud --no_lsgan --norm batch --pool_size 0

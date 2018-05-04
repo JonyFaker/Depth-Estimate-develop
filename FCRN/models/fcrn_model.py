@@ -24,9 +24,9 @@ class FCRN_Model(BaseModel):
 			# self.criterionL1 = torch.nn.L1Loss().cuda()
 			self.criterionberHu = networks.berHuLoss()
 			self.optimizer = torch.optim.Adam(self.FCRN.parameters(),
-								lr=opt.lr, betas=(opt.beta1, 0.999))
+								lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=0.0005)
 			# self.optimizer = torch.optim.SGD(self.FCRN.parameters(),
-			# 					lr=opt.lr, momentum=opt.momentum)
+			# 					lr=opt.lr, momentum=opt.momentum, weight_decay=0.0005)
 			self.schedulers.append(networks.get_scheduler(self.optimizer, opt))
 
 		if not self.isTrain or opt.continue_train:
@@ -64,14 +64,15 @@ class FCRN_Model(BaseModel):
 		self.net_input = Variable(input_A, volatile=True)
 		self.net_output = self.FCRN(self.net_input)
 		self.gd = Variable(input_B, volatile=True)
+		self.val_loss = self.criterionberHu(self.net_output, self.gd)
 
+	def get_current_val_errors(self):
+		return OrderedDict([('Loss_val', self.val_loss.data[0])])
 
 	def get_image_paths(self):
 		return self.image_paths
 
 	def backward(self, net_output, gd):
-		print(net_output.size())
-		print(gd.size())
 		# self.loss = self.criterionMSE(net_output, gd)
 		# self.loss = self.criterionL1(net_output, gd)
 		self.loss = self.criterionberHu(net_output, gd)
@@ -79,7 +80,7 @@ class FCRN_Model(BaseModel):
 
 
 	def get_current_errors(self):
-		return OrderedDict([('Loss_MES', self.loss.data[0])
+		return OrderedDict([('Loss', self.loss.data[0])
                             ])
 
 	def get_current_visuals(self):

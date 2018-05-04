@@ -123,6 +123,13 @@ class Visualizer():
         with open(self.log_name, "a") as log_file:
             log_file.write('%s\n' % message)
 
+    def print_current_val_errors(self, epoch, i, errors):
+        message = '(epoch: %d, iters: %d) ' % (epoch, i)
+        for k, v in errors.items():
+            message += '%s: %.3f ' % (k, v)
+        print(message)
+
+
     # save image to the disk
     def save_images(self, webpage, visuals, image_path, aspect_ratio=1.0):
         image_dir = webpage.get_image_dir()

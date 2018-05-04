@@ -19,24 +19,16 @@ class NYUDDataset(BaseDataset):
 		assert(opt.resize_or_crop == "resize_and_crop")
 
 	def __getitem__(self, index):
-		# AB_path = self.AB_paths[index]
 		A_path = self.nyud_img[index]
 		B_path = self.nyud_dep[index]
 		A = Image.open(A_path).convert('RGB')
 		B = Image.open(B_path).convert('L')
-        # AB = Image.open(AB_path).convert('RGB')
-        # w, h = AB.size
-        # w2 = int(w / 2)
+
         A = A.resize((self.opt.loadSize_w, self.opt.loadSize_h), Image.BICUBIC)
         B = B.resize((160, 128), Image.BICUBIC)
-        # B = B.resize((self.opt.loadSize_h, self.opt.loadSize_w), Image.BICUBIC)
+
         A = transforms.ToTensor()(A)
         B = transforms.ToTensor()(B)
-        # w_offset = random.randint(0, max(0, self.opt.loadSize - self.opt.fineSize - 1))
-        # h_offset = random.randint(0, max(0, self.opt.loadSize - self.opt.fineSize - 1))
-
-        # A = A[:, h_offset:h_offset + self.opt.fineSize, w_offset:w_offset + self.opt.fineSize]
-        # B = B[:, h_offset:h_offset + self.opt.fineSize, w_offset:w_offset + self.opt.fineSize]
 
         A = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(A)
         B = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(B)
@@ -59,11 +51,6 @@ class NYUDDataset(BaseDataset):
         if input_nc == 1:  # RGB to gray
             tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
             A = tmp.unsqueeze(0)
-
-		# B is alread gray
-        # if output_nc == 1:  # RGB to gray
-        #     tmp = B[0, ...] * 0.299 + B[1, ...] * 0.587 + B[2, ...] * 0.114
-        #     B = tmp.unsqueeze(0)
 
         return {'A': A, 'B': B,
                 'A_paths': A_path, 'B_paths': B_path}
